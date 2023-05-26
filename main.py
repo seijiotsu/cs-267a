@@ -1,3 +1,10 @@
+
+class ProbabilisticTuples:
+    
+    # Given a certain CNF, filter out the only tuples that matter
+    def filter(cnf):
+        pass
+
 def lift(cnf, P):
     """
     The lifted inference algorithm.
