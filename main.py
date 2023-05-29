@@ -18,7 +18,8 @@ def lift(cnf, P):
     # in the probabilistic database, and return the probability.
     #
 
-    # check if formot of query is (operator, instance). If that is the case it should exist in the database
+    # check if format of query is (operator, instance). If that is the case it should exist in the database
+    # TODO: handle base cases that are not in database
     if cnf[0] in P['available_operators'] and cnf[1] in P['available_instances']:
         # base case reached, query database
         return 1 #temp
@@ -64,7 +65,7 @@ def lift(cnf, P):
     #   and voila
     #
     """code for step 2 here"""
-    # check that cnf is a ucnf with m > 1
+    # check that cnf is a ucnf (m > 1 covered in preprocess)
     print('entering 2')
     print(cnf)
     if cnf[0] == 'or':
@@ -73,20 +74,30 @@ def lift(cnf, P):
         for i in range(1, math.floor(m/2) + 1):
             for clause1 in itertools.combinations(cnf[1:], i):
                 clause2 = tuple(x for x in cnf[1:] if x not in clause1)
-                print('clause1, clause2')
-                print(clause1, clause2)
                 if is_independent(clause1, clause2):
-                    pass
+                    return 1 - (1 - lift(clause1, P))*(1 - lift(clause2, P))
                 
     #
     # Step 3: Inclusion-Exclusion
     #
     # If the clauses are not independent, that means we couldn't do the previous
     # step and we have to try another angle.
-    #
-    # There's some complex formula here that I don't really understand
-    #
+    # 
+    # Inclusion-Exclusion, think venn diagrams.
+    # cancellations is going to be a big part of this step, but first implementation will be without it.
     """code for step 3 here"""
+    if cnf[0] == 'or':
+        m = len(cnf) - 1
+        returnval = 0
+        # go through all areas of the venn diagram:
+        # TODO: implement cancellations. If two subcnfs are the same, but are added with opposing signs, they cancel out.
+        for i in range(1, m):
+            for subset in itertools.combinations(cnf[1:], i):
+                # turn subset tuple into cnf of ands
+                subcnf = ['and', *subset]
+                returnval += (-1)**(i+1) * lift(subcnf, P)
+        return returnval
+
 
     #
     # Step 4: Decomposable Conjunction
@@ -97,6 +108,14 @@ def lift(cnf, P):
     # and return that
     #
     """code for step 4 here"""
+    if cnf[0] == 'and':
+        m = len(cnf) - 1
+        # check all ways to split cnf into two clauses:
+        for i in range(1, math.floor(m/2) + 1):
+            for clause1 in itertools.combinations(cnf[1:], i):
+                clause2 = tuple(x for x in cnf[1:] if x not in clause1)
+                if is_independent(clause1, clause2):
+                    return lift(clause1, P) * lift(clause2, P)
 
     #
     # Step 5: Decomposable Universal Quantifier
@@ -109,6 +128,10 @@ def lift(cnf, P):
     #       p += L(Q[x/person], P|x=person)
     #
     """code for step 5 here"""
+    if cnf[0] == 'forall':
+        returnval = 1
+        for instance in P['available_instances']:
+            returnval *= lift(cnf[2], {'available_operators': P['available_operators'], 'available_instances': [instance]}) 
 
     #
     # Step 6: Fail

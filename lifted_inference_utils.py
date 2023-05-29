@@ -70,6 +70,12 @@ def preprocess_iteration(query):
 
     # operations to be done if first keyword is 'and'
     elif query[0] == 'and':
+        # if there is only one argument, return that argument
+        if len(query) == 2:
+            passed = False
+            new_query = query[1]
+
+        # if there are more than one argument, we loop over arguments to simplify
         for arg in range(1, len(query)): # looping over all possible arguments
             # simplifying nestled ands
             if query[arg][0] == 'and':
@@ -96,6 +102,12 @@ def preprocess_iteration(query):
 
     # operations to be done if first keyword is 'or'
     elif query[0] == 'or':
+        # if there is only one argument, return that argument
+        if len(query) == 2:
+            passed = False
+            new_query = query[1]
+
+        # if there are more than one argument, we loop over arguments to simplify
         for arg in range(1, len(query)): # looping over all possible arguments
             # simplifying nestled ors
             if query[arg][0] == 'or':
