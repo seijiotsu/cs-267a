@@ -30,8 +30,6 @@ def preprocess_iteration(query):
 
     query:  query, not necessarily in cnf form
     """
-
-    print(query)
     passed = True
     # operations to be done if first keyword is 'not'
     if query[0] == 'not':
@@ -146,8 +144,10 @@ def preprocess(query):
             break
     return query
 
-def is_independent(partition):
+def is_independent(c1, c2):
         # check if partition is independent
-        print('partition')
-        print(partition)
+        # for now we assume that each predicate in the database is independent of every other predicate, which makes 
+        # the partition independent no predicates are shared between the partitions
+        print(c1)
+        print(c2)
         return True

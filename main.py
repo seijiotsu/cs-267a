@@ -1,4 +1,6 @@
 from lifted_inference_utils import preprocess, is_independent
+import itertools
+import math
 
 def lift(cnf, P):
     """
@@ -19,9 +21,13 @@ def lift(cnf, P):
     # check if formot of query is (operator, instance). If that is the case it should exist in the database
     if cnf[0] in P['available_operators'] and cnf[1] in P['available_instances']:
         # base case reached, query database
-        return 1
+        return 1 #temp
     # else check if we have a not followed by a operator keyword. If that is the case the negation should exist in the database
-    # TODO
+    elif cnf[0] == 'not':
+        subcnf = cnf[1]
+        if subcnf[0] in P['available_operators'] and subcnf[1] in P['available_instances']:
+            # base case reached, query database for the negation of the query
+            return -1 #temp
     # else not base case reached, keep going
 
 
@@ -59,15 +65,17 @@ def lift(cnf, P):
     #
     """code for step 2 here"""
     # check that cnf is a ucnf with m > 1
+    print('entering 2')
     print(cnf)
     if cnf[0] == 'or':
         m = len(cnf) - 1
-        # check all partitions of cnf for independence
-        for i in range(1, m):
-            for partition in itertools.combinations(cnf[1:], i):
-                # check if partition is independent
-                if is_independent(partition):
-                    # partition is independent, evaluate
+        # check all ways to split cnf into two clauses:
+        for i in range(1, math.floor(m/2) + 1):
+            for clause1 in itertools.combinations(cnf[1:], i):
+                clause2 = tuple(x for x in cnf[1:] if x not in clause1)
+                print('clause1, clause2')
+                print(clause1, clause2)
+                if is_independent(clause1, clause2):
                     pass
                 
     #
@@ -110,10 +118,9 @@ def lift(cnf, P):
 #cnf = ("happy", "John")
 P = {'available_operators': ["q", "q2", "q3"], 'available_instances': ["John"]}
 
-test = ['and', ['not', ['exists', 'x', ['not', 'q']]], ['or', 'q2', 'q3']]
+#test = ['and', ['not', ['exists', 'x', ['not', 'q']]], ['or', 'q2', 'q3']]
 #test = ['and', 'q', ['and', 'q2', 'q3']]
+test = ['or', 'q', 'q2', 'q3', 'q4']
 
-print(test)
-simplified = preprocess(test)
-print(simplified)
-lift(simplified,P)
+
+lift(test,P)
