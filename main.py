@@ -1,3 +1,5 @@
+from lifted_inference_utils import preprocess, is_independent
+
 def lift(cnf, P):
     """
     The lifted inference algorithm.
@@ -13,7 +15,15 @@ def lift(cnf, P):
     # example "Attends(John, UCLA)". If this is the case, we can just look it up
     # in the probabilistic database, and return the probability.
     #
-    """code for step 0 here"""
+
+    # check if formot of query is (operator, instance). If that is the case it should exist in the database
+    if cnf[0] in P['available_operators'] and cnf[1] in P['available_instances']:
+        # base case reached, query database
+        return 1
+    # else check if we have a not followed by a operator keyword. If that is the case the negation should exist in the database
+    # TODO
+    # else not base case reached, keep going
+
 
     #
     # Step 1: Rewriting of Query
@@ -28,7 +38,8 @@ def lift(cnf, P):
     #
     # so I think this step is about separating out the variables?
     #
-    """code for step 1 here"""
+
+    cnf = preprocess(cnf)
 
     #
     # Step 2: Decomposable disjunction
@@ -47,7 +58,18 @@ def lift(cnf, P):
     #   and voila
     #
     """code for step 2 here"""
-
+    # check that cnf is a ucnf with m > 1
+    print(cnf)
+    if cnf[0] == 'or':
+        m = len(cnf) - 1
+        # check all partitions of cnf for independence
+        for i in range(1, m):
+            for partition in itertools.combinations(cnf[1:], i):
+                # check if partition is independent
+                if is_independent(partition):
+                    # partition is independent, evaluate
+                    pass
+                
     #
     # Step 3: Inclusion-Exclusion
     #
@@ -84,3 +106,14 @@ def lift(cnf, P):
     # Step 6: Fail
     #
     """code for step 6 here"""
+
+#cnf = ("happy", "John")
+P = {'available_operators': ["q", "q2", "q3"], 'available_instances': ["John"]}
+
+test = ['and', ['not', ['exists', 'x', ['not', 'q']]], ['or', 'q2', 'q3']]
+#test = ['and', 'q', ['and', 'q2', 'q3']]
+
+print(test)
+simplified = preprocess(test)
+print(simplified)
+lift(simplified,P)
