@@ -1,6 +1,7 @@
 from QueryLexer import tokenize, TokenType
 from Expression import *
 from PrettyPrintVisitor import PrettyPrintVisitor
+from LispifyVisitor import LispifyVisitor
 
 class Parser:
     def __init__(self, tokens):
@@ -47,28 +48,28 @@ class Parser:
     
     def orClause(self):
         andClauses = [self.andClause()]
-        while self.matchAnyOf(TokenType.VERTICAL_BAR):
+        while self.matchAnyOf(TokenType.VERTICAL_BAR, TokenType.LOGICAL_OR):
             andClause = self.andClause()
             andClauses.append(andClause)
         return OrClause(andClauses)
     
     def andClause(self):
         clauses = [self.clause()]
-        while self.matchAnyOf(TokenType.AMPERSAND):
+        while self.matchAnyOf(TokenType.AMPERSAND, TokenType.LOGICAL_AND):
             clause = self.clause()
             clauses.append(clause)
         return AndClause(clauses)
     
     def clause(self):
-        if self.matchAnyOf(TokenType.DOLLAR_SIGN):
+        if self.matchAnyOf(TokenType.OCTOTHORPE, TokenType.EXISTS):
             identifier = self.expect(TokenType.IDENTIFIER)
             clause = self.clause()
             return ExistsClause(identifier, clause)
-        elif self.matchAnyOf(TokenType.AT_SIGN):
+        elif self.matchAnyOf(TokenType.AT_SIGN, TokenType.FORALL):
             identifier = self.expect(TokenType.IDENTIFIER)
             clause = self.clause()
             return ForallClause(identifier, clause)
-        elif self.matchAnyOf(TokenType.TILDE):
+        elif self.matchAnyOf(TokenType.TILDE, TokenType.LOGICAL_NOT):
             clause = self.clause()
             return NotClause(clause)
         elif self.matchAnyOf(TokenType.L_PAREN):
@@ -81,12 +82,12 @@ class Parser:
 
     def atom(self):
         identifier = self.expect(TokenType.IDENTIFIER)
-        self.expect(TokenType.L_PAREN)
+        self.expect(TokenType.L_BRAC)
         arguments = [self.argument()]
         while self.matchAnyOf(TokenType.COMMA):
             argument = self.argument()
             arguments.append(argument)
-        self.expect(TokenType.R_PAREN)
+        self.expect(TokenType.R_BRAC)
         return Atom(identifier, arguments)
     
     def argument(self):
@@ -103,9 +104,12 @@ def parseQuery(queryText):
     entry = parser.entry()
     return entry
 
-testString = '$x $y (Smoker(x) & Friend(x, y)) | @x1 @y1 @x2 @y2 (S(x1, y2) | R(y1) | S(x2, y2) | T(y2))'
-testString2 = "@a $variable Smoker(variable) & ~ @b Friend(x, 'Bob the Really Cool Guy Next Door')"
-print(tokenize(testString2))
-parsed = parseQuery(testString2)
+testString = '∃x ∃y (Smoker[x] ∧ Friend[x, y]) ∨ ∀x1 ∀y1 ∀x2 ∀y2 (S[x1, y2] ∨ R[y1] ∨ S[x2, y2] ∨ T[y2])'
+testString2 = "@a #variable Smoker[variable] & ~ @b Friend[x, 'Bob the Really Cool Guy Next Door']"
+testString3 = "a[a] | b[b] | c[c] & d[d] | e[e] & Friend[f1, 'f2', 'f3'] & g[g]"
+testString4 = "#x Friend[x]"
+print(tokenize(testString3))
+parsed = parseQuery(testString3)
 
-print(PrettyPrintVisitor().visitEntry(parsed))
+print(LispifyVisitor().visitEntry(parsed))
+

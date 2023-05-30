@@ -3,12 +3,19 @@ from enum import Enum, auto
 class TokenType(Enum):
     L_PAREN = auto()
     R_PAREN = auto()
+    L_BRAC = auto()
+    R_BRAC = auto()
     COMMA = auto()
     AMPERSAND = auto()
     VERTICAL_BAR = auto()
     TILDE = auto()
-    DOLLAR_SIGN = auto()
     AT_SIGN = auto()
+    OCTOTHORPE = auto()
+    LOGICAL_OR = auto()
+    LOGICAL_AND = auto()
+    LOGICAL_NOT = auto()
+    EXISTS = auto()
+    FORALL = auto()
     IDENTIFIER = auto()
     STRING = auto()
     NUMBER = auto()
@@ -58,6 +65,10 @@ class Lexer:
                 self.output.append(Token(TokenType.L_PAREN, self.getCurrValue(), self.currentLine))
             case ')':
                 self.output.append(Token(TokenType.R_PAREN, self.getCurrValue(), self.currentLine))
+            case '[':
+                self.output.append(Token(TokenType.L_BRAC, self.getCurrValue(), self.currentLine))
+            case ']':
+                self.output.append(Token(TokenType.R_BRAC, self.getCurrValue(), self.currentLine))
             case ',':
                 self.output.append(Token(TokenType.COMMA, self.getCurrValue(), self.currentLine))
             case '&':
@@ -66,10 +77,20 @@ class Lexer:
                 self.output.append(Token(TokenType.VERTICAL_BAR, self.getCurrValue(), self.currentLine))
             case '~':
                 self.output.append(Token(TokenType.TILDE, self.getCurrValue(), self.currentLine))
-            case '$':
-                self.output.append(Token(TokenType.DOLLAR_SIGN, self.getCurrValue(), self.currentLine))
+            case '#':
+                self.output.append(Token(TokenType.OCTOTHORPE, self.getCurrValue(), self.currentLine))
             case '@':
                 self.output.append(Token(TokenType.AT_SIGN, self.getCurrValue(), self.currentLine))
+            case '∨':
+                self.output.append(Token(TokenType.LOGICAL_OR, self.getCurrValue(), self.currentLine))
+            case '∧':
+                self.output.append(Token(TokenType.LOGICAL_AND, self.getCurrValue(), self.currentLine))
+            case '∃':
+                self.output.append(Token(TokenType.EXISTS, self.getCurrValue(), self.currentLine))
+            case '∀':
+                self.output.append(Token(TokenType.FORALL, self.getCurrValue(), self.currentLine))
+            case '¬':
+                self.output.append(Token(TokenType.LOGICAL_NOT, self.getCurrValue(), self.currentLine))
             case '\n':
                 self.currentLine += 1
             case ' ' | '\r' | '\t':
