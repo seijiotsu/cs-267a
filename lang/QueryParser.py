@@ -103,13 +103,3 @@ def parseQuery(queryText):
     parser = Parser(tokens)
     entry = parser.entry()
     return entry
-
-testString = '∃x ∃y (Smoker[x] ∧ Friend[x, y]) ∨ ∀x1 ∀y1 ∀x2 ∀y2 (S[x1, y2] ∨ R[y1] ∨ S[x2, y2] ∨ T[y2])'
-testString2 = "@a #variable Smoker[variable] & ~ @b Friend[x, 'Bob the Really Cool Guy Next Door']"
-testString3 = "a[a] | b[b] | c[c] & d[d] | e[e] & Friend[f1, 'f2', 'f3'] & g[g]"
-testString4 = "#x Friend[x]"
-print(tokenize(testString3))
-parsed = parseQuery(testString3)
-
-print(LispifyVisitor().visitEntry(parsed))
-
