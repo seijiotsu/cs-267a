@@ -115,7 +115,7 @@ class Lexer:
         self.output.append(Token(TokenType.STRING, stringValue, self.currentLine, stringLiteral))
 
     def scanIdentifier(self):
-        while (self.isValidIdentifierChar(self.peek())):
+        while (not self.isDone() and self.isValidIdentifierChar(self.peek())):
             self.eat()
         identifierValue = self.input[self.currentStart : self.cursor]
         self.output.append(Token(TokenType.IDENTIFIER, identifierValue, self.currentLine))
