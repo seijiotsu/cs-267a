@@ -1,4 +1,4 @@
-from lifted_inference_utils import preprocess, is_independent
+from lifted_inference_utils import preprocess, is_independent, substitute
 import itertools
 import math
 
@@ -20,15 +20,15 @@ def lift(cnf, P):
 
     # check if format of query is (operator, instance). If that is the case it should exist in the database
     # TODO: handle base cases that are not in database
-    if cnf[0] in P['available_operators'] and cnf[1] in P['available_instances']:
+    if cnf[0] == 'atom' and cnf[2][0] == 'string' and cnf[1] in P['available_instances']:
         # base case reached, query database
         return 1 #temp
     # else check if we have a not followed by a operator keyword. If that is the case the negation should exist in the database
     elif cnf[0] == 'not':
         subcnf = cnf[1]
-        if subcnf[0] in P['available_operators'] and subcnf[1] in P['available_instances']:
+        if subcnf[0] == 'atom' and subcnf[2][0] == 'string' and subcnf[1] in P['available_instances']:
             # base case reached, query database for the negation of the query
-            return -1 #temp
+            return -1 # temp
     # else not base case reached, keep going
 
 
@@ -76,7 +76,8 @@ def lift(cnf, P):
                 clause2 = tuple(x for x in cnf[1:] if x not in clause1)
                 if is_independent(clause1, clause2):
                     return 1 - (1 - lift(clause1, P))*(1 - lift(clause2, P))
-                
+    # if program does not execute the return above, we continue
+
     #
     # Step 3: Inclusion-Exclusion
     #
@@ -91,6 +92,10 @@ def lift(cnf, P):
         returnval = 0
         # go through all areas of the venn diagram:
         # TODO: implement cancellations. If two subcnfs are the same, but are added with opposing signs, they cancel out.
+        # proposed way to deal with cancellations: save all subcnfs. 
+        # Then preprocess them in a way that makes them 'as simple as possible', so
+        # that we can easily check if they are the same. 
+        # Then we can check if they are the same, and if they are, we can remove them from the list if they have opposing signs.
         for i in range(1, m):
             for subset in itertools.combinations(cnf[1:], i):
                 # turn subset tuple into cnf of ands
@@ -107,7 +112,6 @@ def lift(cnf, P):
     #   - p = L(Q1, P|Q1) * L(Q2, P|Q2)
     # and return that
     #
-    """code for step 4 here"""
     if cnf[0] == 'and':
         m = len(cnf) - 1
         # check all ways to split cnf into two clauses:
@@ -130,8 +134,12 @@ def lift(cnf, P):
     """code for step 5 here"""
     if cnf[0] == 'forall':
         returnval = 1
+        variable = cnf[1]
         for instance in P['available_instances']:
-            returnval *= lift(cnf[2], {'available_operators': P['available_operators'], 'available_instances': [instance]}) 
+            subcnf = substitute(cnf[2], variable, instance)
+            returnval *= lift(subcnf, P)
+
+    # TODO: how do we handle a 'exists'? I feel like we need to do 1 - forall(not), but it doesn't show up in the slides i dont think
 
     #
     # Step 6: Fail
