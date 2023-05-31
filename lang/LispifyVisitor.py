@@ -33,7 +33,7 @@ class LispifyVisitor(Visitor):
         return expr.sentence.accept(self)
 
     def visitAtom(self, expr, extra = None):
-        return [expr.identifier.value, *[arg.accept(self) for arg in expr.arguments]]
+        return ['atom', expr.identifier.value, *[arg.accept(self) for arg in expr.arguments]]
     
     def visitStringArgument(self, expr, extra = None):
         return ['string', expr.value]
