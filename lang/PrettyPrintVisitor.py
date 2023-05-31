@@ -1,4 +1,4 @@
-from Visitor import Visitor
+from .Visitor import Visitor
 
 class PrettyPrintVisitor(Visitor):
     def format(self, depth, name, *elements):

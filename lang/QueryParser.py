@@ -1,7 +1,5 @@
-from QueryLexer import tokenize, TokenType
-from Expression import *
-from PrettyPrintVisitor import PrettyPrintVisitor
-from LispifyVisitor import LispifyVisitor
+from .QueryLexer import tokenize, TokenType
+from .Expression import *
 
 class Parser:
     def __init__(self, tokens):

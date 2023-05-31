@@ -1,4 +1,4 @@
-from Visitor import Visitor
+from .Visitor import Visitor
 
 class LispifyVisitor(Visitor):
     def visitEntry(self, expr, extra = None):
