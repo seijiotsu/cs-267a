@@ -26,21 +26,13 @@ def preprocess_iteration(query):
     - simplifying nestled ors: ['or', ['or',q1,q2], q3] => ['or', q1, q2, q3]
     - preprocess all subqueries q: ['or', q]
 
-    starting with 'forall':
-    - distributing the forall into ands: ['forall', x, ['and', q1, q2]] => ['and', ['forall', x, q1], ['forall', x, q2]]
-    (may not be necessary, not yet implemented)
-    - preprocess all subqueries q: ['and', q]
-
-    starting with 'exists':
-    - distributing the exists into ors: ['exists', x, ['or', q1, q2]] => ['or', ['exists', x, q1], ['exists', x, q2]]
-    (may not be necessary, not yet implemented)
-    - preprocess all subqueries q: ['and', q]
+    starting with 'forall' or 'exists':
+    - finding all independent subclauses in 'and' and 'or' queries, and moving them outwards
+    - preprocess all subqueries q: [forall/exists, x, q]
 
     query:  query, not necessarily in cnf form
     """
     passed = True
-
-
 
     # operations to be done if first keyword is 'not'
     if query[0] == 'not':
@@ -132,25 +124,33 @@ def preprocess_iteration(query):
             else:
                 query[arg] = preprocess(query[arg])
 
-    # operations to be done if first keyword is 'forall'
-    elif query[0] == 'forall':
-        # temp
-        if False:
-            pass
-
+    # operations to be done if first keyword is 'forall' or 'exists'
+    elif query[0] == 'forall' or query[0] == 'exists':
         # preprocess subquery
+        query[2] = preprocess(query[2])
+        variable = query[1]
+        if query[2][0] == 'and' or query[2][0] == 'or':
+            independent_subqueries = []
+            dependent_subqueries = []
+            for subquery in query[2][1:]:
+                if not contains(subquery, variable):
+                    # subquery does not contain variable
+                    independent_subqueries.append(subquery)
+                else:
+                    # subquery contains variable
+                    dependent_subqueries.append(subquery)
+            if len(independent_subqueries) == 0:
+                # no independent subqueries
+                pass
+            else:
+                passed = False
+                if query[2][0] == 'and':
+                    new_query = ['and'] + independent_subqueries + [[query[0], variable, ['and'] + dependent_subqueries]]
+                elif query[2][0] == 'or':
+                    new_query = ['or'] + independent_subqueries + [[query[0], variable, ['or'] + dependent_subqueries]]
         else:
-            query[2] = preprocess(query[2])
-
-    # operations to be done if first keyword is 'exists'
-    elif query[0] == 'exists':
-        # temp
-        if False:
+            # subquery is not an and or or query
             pass
-
-        # preprocess subquery
-        else:
-            query[2] = preprocess(query[2])
 
     # operations to be done if first keyword is 'atom'
     elif query[0] == 'atom':
@@ -217,6 +217,9 @@ def substitute(query, var, instance):
     if query[0] == 'atom' and query[2][0] == 'variable' and query[2][1] == var:
         returnquery = ['atom', query[1], ['string', instance]]
 
+    elif query[0] == 'atom' and query[2][0] == 'string':
+        returnquery = query
+
     elif query[0] == 'and':
         subqueries = [substitute(subquery, var, instance) for subquery in query[1:]]
         returnquery = ['and'] + subqueries
@@ -231,4 +234,22 @@ def substitute(query, var, instance):
     else:
         raise Exception('Invalid keyword: ' + query[0])
     return returnquery
+
+def contains(query, variable):
+    # returns true if query contains variable, false otherwise
+    if query[0] == 'atom' and query[2][0] == 'variable' and query[2][1] == variable:
+        return True
+    elif query[0] == 'atom':
+        return False
+    elif query[0] == 'and' or query[0] == 'or':
+        for subquery in query[1:]:
+            if contains(subquery, variable):
+                return True
+        return False
+    elif query[0] == 'not':
+        return contains(query[1], variable)
+    elif query[0] == 'forall' or query[0] == 'exists':
+        return contains(query[2], variable)
+    else:
+        raise Exception('Invalid keyword: ' + query[0])
 

@@ -88,6 +88,7 @@ def lift(cnf, P):
                 else:
                     clause2 = ['or', *set2]
                 if is_independent(clause1, clause2):
+                    print('Independent: ' + str(clause1) + ' and ' + str(clause2))
                     return 1 - (1 - lift(clause1, P))*(1 - lift(clause2, P))
     # if program does not execute the return above, we continue
 
@@ -109,7 +110,7 @@ def lift(cnf, P):
         # Then preprocess them in a way that makes them 'as simple as possible', so
         # that we can easily check if they are the same. 
         # Then we can check if they are the same, and if they are, we can remove them from the list if they have opposing signs.
-        for i in range(1, m):
+        for i in range(1, m+1):
             for subset in itertools.combinations(cnf[1:], i):
                 # turn subset tuple into cnf of ands
                 subcnf = ['and', *subset]
@@ -164,7 +165,7 @@ def lift(cnf, P):
 
     if cnf[0] == 'exists':
         newquery = ['forall', cnf[1], ['not', cnf[2]]]
-        return 1 - lift(newquery, P)    
+        return 1 - lift(newquery, P)
 
     #
     # Step 6: Fail
