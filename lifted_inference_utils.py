@@ -39,6 +39,9 @@ def preprocess_iteration(query):
     query:  query, not necessarily in cnf form
     """
     passed = True
+
+
+
     # operations to be done if first keyword is 'not'
     if query[0] == 'not':
         # removing double negation
@@ -151,9 +154,7 @@ def preprocess_iteration(query):
 
     # operations to be done if first keyword is 'atom'
     elif query[0] == 'atom':
-        # check if atom contains a variable, this shouldnt happen so we throw error
-        if query[2][0] == 'variable':
-            raise Exception('Atom contains variable: ' + query[2][1])
+        pass
 
     else: # error
         raise Exception('Invalid keyword: ' + query[0])
@@ -209,17 +210,25 @@ def get_predicates(query):
         predicates += get_predicates(query[2])
     else:
         raise Exception('Invalid keyword: ' + query[0])
+    return predicates
     
 def substitute(query, var, instance):
     # substitutes all instances of var in query with instance
     if query[0] == 'atom' and query[2][0] == 'variable' and query[2][1] == var:
-        query[2] = ['string', instance]
-    elif query[0] == 'and' or query[0] == 'or':
-        for i, subquery in enumerate(query[1:]):
-            query[i] = substitute(subquery, var, instance)
+        returnquery = ['atom', query[1], ['string', instance]]
+
+    elif query[0] == 'and':
+        subqueries = [substitute(subquery, var, instance) for subquery in query[1:]]
+        returnquery = ['and'] + subqueries
+
+    elif query[0] == 'or':
+        subqueries = [substitute(subquery, var, instance) for subquery in query[1:]]
+        returnquery = ['or'] + subqueries
+
     elif query[0] == 'not':
-        query[1] = substitute(query[1], var, instance)
+        returnquery = ['not', substitute(query[1], var, instance)]
+
     else:
         raise Exception('Invalid keyword: ' + query[0])
-    return query
+    return returnquery
 

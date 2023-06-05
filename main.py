@@ -10,6 +10,7 @@ def lift(cnf, P):
     P:      the probabilistic tuples we are evalulating.
     """
 
+    print('Lifting: ' + str(cnf))
     #
     # Step 0: Base of Recursion
     # In this step, we check whether or not the cnf is a single "ground atom" t.
@@ -20,15 +21,19 @@ def lift(cnf, P):
 
     # check if format of query is (operator, instance). If that is the case it should exist in the database
     # TODO: handle base cases that are not in database
-    if cnf[0] == 'atom' and cnf[2][0] == 'string' and cnf[1] in P['available_instances']:
+    if cnf[0] == 'atom' and cnf[2][0] == 'string' and cnf[1] in P['available_operators']:
         # base case reached, query database
-        return 1 #temp
+        return P['database'][(cnf[1], cnf[2][1])]
     # else check if we have a not followed by a operator keyword. If that is the case the negation should exist in the database
     elif cnf[0] == 'not':
         subcnf = cnf[1]
-        if subcnf[0] == 'atom' and subcnf[2][0] == 'string' and subcnf[1] in P['available_instances']:
+        if subcnf[0] == 'atom' and subcnf[2][0] == 'string' and subcnf[1] in P['available_operators']:
             # base case reached, query database for the negation of the query
-            return -1 # temp
+            return 1 - P['database'][(subcnf[1], subcnf[2][1])]
+    # fault check
+    if cnf[0] == 'atom' and cnf[2][0] == 'variable':
+        raise Exception('Query is not grounded: ' + cnf)
+    
     # else not base case reached, keep going
 
 
@@ -47,6 +52,7 @@ def lift(cnf, P):
     #
 
     cnf = preprocess(cnf)
+    print('Preprocessed: ' + str(cnf))
 
     #
     # Step 2: Decomposable disjunction
@@ -66,14 +72,21 @@ def lift(cnf, P):
     #
     """code for step 2 here"""
     # check that cnf is a ucnf (m > 1 covered in preprocess)
-    print('entering 2')
-    print(cnf)
     if cnf[0] == 'or':
         m = len(cnf) - 1
         # check all ways to split cnf into two clauses:
         for i in range(1, math.floor(m/2) + 1):
-            for clause1 in itertools.combinations(cnf[1:], i):
-                clause2 = tuple(x for x in cnf[1:] if x not in clause1)
+            for set1 in itertools.combinations(cnf[1:], i):
+                set2 = tuple(x for x in cnf[1:] if x not in set1)
+                # turn sets into cnfs of ors
+                if len(set1) == 1:
+                    clause1 = set1[0]
+                else:
+                    clause1 = ['or', *set1]
+                if len(set2) == 1:
+                    clause2 = set2[0]
+                else:
+                    clause2 = ['or', *set2]
                 if is_independent(clause1, clause2):
                     return 1 - (1 - lift(clause1, P))*(1 - lift(clause2, P))
     # if program does not execute the return above, we continue
@@ -116,8 +129,17 @@ def lift(cnf, P):
         m = len(cnf) - 1
         # check all ways to split cnf into two clauses:
         for i in range(1, math.floor(m/2) + 1):
-            for clause1 in itertools.combinations(cnf[1:], i):
-                clause2 = tuple(x for x in cnf[1:] if x not in clause1)
+            for set1 in itertools.combinations(cnf[1:], i):
+                set2 = tuple(x for x in cnf[1:] if x not in set1)
+                # turn sets into cnfs of ands
+                if len(set1) == 1:
+                    clause1 = set1[0]
+                else:
+                    clause1 = ['and', *set1]
+                if len(set2) == 1:
+                    clause2 = set2[0]
+                else:
+                    clause2 = ['and', *set2]
                 if is_independent(clause1, clause2):
                     return lift(clause1, P) * lift(clause2, P)
 
@@ -138,20 +160,24 @@ def lift(cnf, P):
         for instance in P['available_instances']:
             subcnf = substitute(cnf[2], variable, instance)
             returnval *= lift(subcnf, P)
+        return returnval
 
-    # TODO: how do we handle a 'exists'? I feel like we need to do 1 - forall(not), but it doesn't show up in the slides i dont think
+    if cnf[0] == 'exists':
+        newquery = ['forall', cnf[1], ['not', cnf[2]]]
+        return 1 - lift(newquery, P)    
 
     #
     # Step 6: Fail
     #
     """code for step 6 here"""
+    return -1 # fail
 
 #cnf = ("happy", "John")
-P = {'available_operators': ["q", "q2", "q3"], 'available_instances': ["John"]}
+P = {'available_operators': ["q", "q2", "q3"], 'available_instances': ["John", "Mary", "Susan"]}
 
 #test = ['and', ['not', ['exists', 'x', ['not', 'q']]], ['or', 'q2', 'q3']]
 #test = ['and', 'q', ['and', 'q2', 'q3']]
 test = ['or', 'q', 'q2', 'q3', 'q4']
 
 
-lift(test,P)
+#lift(test,P)
