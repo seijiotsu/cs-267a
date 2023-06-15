@@ -1,3 +1,6 @@
+import cmd
+from lang.QueryParser import parseQuery
+from lang.LispifyVisitor import LispifyVisitor
 
 class ProbabilisticTuples:
     
@@ -91,3 +94,49 @@ def lift(cnf, P):
     # Step 6: Fail
     #
     """code for step 6 here"""
+
+
+class QueryShell(cmd.Cmd):
+    intro = 'Hello, this is the CS267A Probabilitic Database REPL. Type .help for help.\n'
+    prompt = '>>> '
+
+    help_msg = """
+=== Help Menu ===
+
+- Type '.quit' to quit.
+- Type '.ops' for avaliable operators.
+    
+Queries follow a format that mirrors First-Order logic:
+
+    - Exists: '∃x' or '#x'
+    - For all: '∀x' or '@x'
+    - Atom: 'Name[x, y]'
+    - And: '∧' or '&'
+    - Or: '∨' or '|'
+    
+Quantifiers act like a unary operator in other languages, so use '()' to change its scope
+For example:
+
+#x (Smoker[x] & Friend[x, 'Bob']) | @x1 @y1 @x2 @y2 (S[x1, y2] | R[y1] | S[x2, y2] | T[y2])
+
+=== End Help ===
+"""
+
+    def onecmd(self, line):
+        line = line.lower().strip()
+        if line == '.help':
+            print(self.help_msg)
+        elif line == '.quit':
+            return True
+        elif line == '.ops':
+            print('Not yet implemented...')
+        else:
+            try:
+                parsedQuery = parseQuery(line)
+                lispedQuery = LispifyVisitor().visitEntry(parsedQuery)
+                print(lispedQuery)
+            except Exception as error:
+                print(error)
+
+if __name__ == '__main__':
+    QueryShell().cmdloop()
