@@ -3,10 +3,11 @@ from lang.QueryParser import parseQuery
 from lang.LispifyVisitor import LispifyVisitor
 
 from lifted_inference_utils import preprocess, is_independent, substitute
+from db_utils import DatabaseConnection
 import itertools
 import math
 
-def lift(cnf, P, verbose = False):
+def lift(cnf, db: DatabaseConnection, verbose = False):
     """
     The lifted inference algorithm.
 
@@ -26,15 +27,15 @@ def lift(cnf, P, verbose = False):
 
     # check if format of query is (operator, instance). If that is the case it should exist in the database
     # TODO: handle base cases that are not in database
-    if cnf[0] == 'atom' and cnf[2][0] == 'string' and cnf[1] in P['available_operators']:
+    if cnf[0] == 'atom' and cnf[2][0] == 'string' and cnf[1] in db.operators:
         # base case reached, query database
-        return P['database'][(cnf[1], cnf[2][1])]
+        return db.probability(cnf[1], cnf[2][1])
     # else check if we have a not followed by a operator keyword. If that is the case the negation should exist in the database
     elif cnf[0] == 'not':
         subcnf = cnf[1]
-        if subcnf[0] == 'atom' and subcnf[2][0] == 'string' and subcnf[1] in P['available_operators']:
+        if subcnf[0] == 'atom' and subcnf[2][0] == 'string' and subcnf[1] in db.operators:
             # base case reached, query database for the negation of the query
-            return 1 - P['database'][(subcnf[1], subcnf[2][1])]
+            return 1 - db.probability(subcnf[1], subcnf[2][1])
     # fault check
     if cnf[0] == 'atom' and cnf[2][0] == 'variable':
         raise Exception('Query is not grounded: ' + cnf)
@@ -96,7 +97,7 @@ def lift(cnf, P, verbose = False):
                 if is_independent(clause1, clause2):
                     if verbose:
                         print('Independent: ' + str(clause1) + ' and ' + str(clause2))
-                    return 1 - (1 - lift(clause1, P))*(1 - lift(clause2, P))
+                    return 1 - (1 - lift(clause1, db))*(1 - lift(clause2, db))
     # if program does not execute the return above, we continue
 
     #
@@ -121,7 +122,7 @@ def lift(cnf, P, verbose = False):
             for subset in itertools.combinations(cnf[1:], i):
                 # turn subset tuple into cnf of ands
                 subcnf = ['and', *subset]
-                returnval += (-1)**(i+1) * lift(subcnf, P)
+                returnval += (-1)**(i+1) * lift(subcnf, db)
         return returnval
 
 
@@ -149,7 +150,7 @@ def lift(cnf, P, verbose = False):
                 else:
                     clause2 = ['and', *set2]
                 if is_independent(clause1, clause2):
-                    return lift(clause1, P) * lift(clause2, P)
+                    return lift(clause1, db) * lift(clause2, db)
 
     #
     # Step 5: Decomposable Universal Quantifier
@@ -165,25 +166,20 @@ def lift(cnf, P, verbose = False):
     if cnf[0] == 'forall':
         returnval = 1
         variable = cnf[1]
-        for instance in P['available_instances']:
+        for instance in db.instances:
             subcnf = substitute(cnf[2], variable, instance)
-            returnval *= lift(subcnf, P)
+            returnval *= lift(subcnf, db)
         return returnval
 
     if cnf[0] == 'exists':
         newquery = ['forall', cnf[1], ['not', cnf[2]]]
-        return 1 - lift(newquery, P)
+        return 1 - lift(newquery, db)
 
     #
     # Step 6: Fail
     #
     """code for step 6 here"""
     return -1 # fail
-
-
-db = {('A', 'a'): 0.1, ('A', 'b'): 0.2, ('A', 'c'): 0.3, ('A', 'd'): 0.4,
-    ('B', 'a'): 0.5, ('B', 'b'): 0.6, ('B', 'c'): 0.7, ('B', 'd'): 0.8}
-data = {'available_operators': ['A', 'B'], 'available_instances': ['a', 'b', 'c', 'd'], 'database': db}
 
 class QueryShell(cmd.Cmd):
     intro = 'Hello, this is the CS267A Probabilitic Database REPL. Type .help for help.\n'
@@ -196,6 +192,9 @@ class QueryShell(cmd.Cmd):
 - Type '.ops' for avaliable operators.
 - Type '.instances' for avaliable instances.
 - Type '.verbose' to toggle verbosity
+
+- Type '.load X.db Y' to load file X.db and table Y
+- Type '.load_default' to load the default 'main.db' database and 'TestingData' table
     
 Queries follow a format that mirrors First-Order logic:
 
@@ -209,10 +208,13 @@ Queries follow a format that mirrors First-Order logic:
 Quantifiers act like a unary operator in other languages, so use '()' to change its scope
 For example:
 
+#x (A[x] & B[x]) <-- can run this on .load_default
 #x (Smoker[x] & ~Writer['Bob']) | @x1 @y1 @x2 @y2 (S[x1, y2] | R[y1] | S[x2, y2] | T[y2])
 
 === End Help ===
 """
+
+    db = None
 
     is_verbose = False
 
@@ -223,20 +225,31 @@ For example:
         elif line == '.quit':
             return True
         elif line == '.ops':
-            print(data['available_operators'])
+            if not self.db:
+                print('You nee to load a database before you can access the available operators!')
+            else:
+                print(self.db.operators)
         elif line == '.instances':
-            print(data['available_instances'])
+            if not self.db:
+                print('You nee to load a database before you can access the available instances!')
+            else:
+                print(self.db.instances)
         elif line == '.verbose':
             self.is_verbose = not self.is_verbose
             if self.is_verbose:
                 print('Enabled verbose output')
             else:
                 print('Disabled verbose output')
+        elif line == '.load_default':
+            self.db = DatabaseConnection('main.db', 'TestingData')
+        elif '.load' in line:
+            line = line.split(' ')
+            self.db = DatabaseConnection(line[1], line[2])
         else:
             try:
                 parsedQuery = parseQuery(line)
                 lispedQuery = LispifyVisitor().visitEntry(parsedQuery)
-                res = lift(lispedQuery, data, self.is_verbose)
+                res = lift(lispedQuery, self.db, self.is_verbose)
                 print(res)
             except Exception as error:
                 print(error)
