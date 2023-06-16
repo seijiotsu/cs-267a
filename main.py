@@ -6,7 +6,7 @@ from lifted_inference_utils import preprocess, is_independent, substitute
 import itertools
 import math
 
-def lift(cnf, P):
+def lift(cnf, P, verbose = False):
     """
     The lifted inference algorithm.
 
@@ -14,7 +14,8 @@ def lift(cnf, P):
     P:      the probabilistic tuples we are evalulating.
     """
 
-    print('Lifting: ' + str(cnf))
+    if verbose:
+        print('Lifting: ' + str(cnf))
     #
     # Step 0: Base of Recursion
     # In this step, we check whether or not the cnf is a single "ground atom" t.
@@ -56,7 +57,8 @@ def lift(cnf, P):
     #
 
     cnf = preprocess(cnf)
-    print('Preprocessed: ' + str(cnf))
+    if verbose:
+        print('Preprocessed: ' + str(cnf))
 
     #
     # Step 2: Decomposable disjunction
@@ -92,7 +94,8 @@ def lift(cnf, P):
                 else:
                     clause2 = ['or', *set2]
                 if is_independent(clause1, clause2):
-                    print('Independent: ' + str(clause1) + ' and ' + str(clause2))
+                    if verbose:
+                        print('Independent: ' + str(clause1) + ' and ' + str(clause2))
                     return 1 - (1 - lift(clause1, P))*(1 - lift(clause2, P))
     # if program does not execute the return above, we continue
 
@@ -192,6 +195,7 @@ class QueryShell(cmd.Cmd):
 - Type '.quit' to quit.
 - Type '.ops' for avaliable operators.
 - Type '.instances' for avaliable instances.
+- Type '.verbose' to toggle verbosity
     
 Queries follow a format that mirrors First-Order logic:
 
@@ -210,6 +214,8 @@ For example:
 === End Help ===
 """
 
+    is_verbose = False
+
     def onecmd(self, line):
         line = line.strip()
         if line == '.help':
@@ -220,11 +226,17 @@ For example:
             print(data['available_operators'])
         elif line == '.instances':
             print(data['available_instances'])
+        elif line == '.verbose':
+            self.is_verbose = not self.is_verbose
+            if self.is_verbose:
+                print('Enabled verbose output')
+            else:
+                print('Disabled verbose output')
         else:
             try:
                 parsedQuery = parseQuery(line)
                 lispedQuery = LispifyVisitor().visitEntry(parsedQuery)
-                res = lift(lispedQuery, data)
+                res = lift(lispedQuery, data, self.is_verbose)
                 print(res)
             except Exception as error:
                 print(error)
