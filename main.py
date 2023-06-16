@@ -178,6 +178,10 @@ def lift(cnf, P):
     return -1 # fail
 
 
+db = {('A', 'a'): 0.1, ('A', 'b'): 0.2, ('A', 'c'): 0.3, ('A', 'd'): 0.4,
+    ('B', 'a'): 0.5, ('B', 'b'): 0.6, ('B', 'c'): 0.7, ('B', 'd'): 0.8}
+data = {'available_operators': ['A', 'B'], 'available_instances': ['a', 'b', 'c', 'd'], 'database': db}
+
 class QueryShell(cmd.Cmd):
     intro = 'Hello, this is the CS267A Probabilitic Database REPL. Type .help for help.\n'
     prompt = '>>> '
@@ -187,6 +191,7 @@ class QueryShell(cmd.Cmd):
 
 - Type '.quit' to quit.
 - Type '.ops' for avaliable operators.
+- Type '.instances' for avaliable instances.
     
 Queries follow a format that mirrors First-Order logic:
 
@@ -195,28 +200,32 @@ Queries follow a format that mirrors First-Order logic:
     - Atom: 'Name[x, y]'
     - And: '∧' or '&'
     - Or: '∨' or '|'
+    - Not: '¬' or '~'
     
 Quantifiers act like a unary operator in other languages, so use '()' to change its scope
 For example:
 
-#x (Smoker[x] & Friend[x, 'Bob']) | @x1 @y1 @x2 @y2 (S[x1, y2] | R[y1] | S[x2, y2] | T[y2])
+#x (Smoker[x] & ~Writer['Bob']) | @x1 @y1 @x2 @y2 (S[x1, y2] | R[y1] | S[x2, y2] | T[y2])
 
 === End Help ===
 """
 
     def onecmd(self, line):
-        line = line.lower().strip()
+        line = line.strip()
         if line == '.help':
             print(self.help_msg)
         elif line == '.quit':
             return True
         elif line == '.ops':
-            print('Not yet implemented...')
+            print(data['available_operators'])
+        elif line == '.instances':
+            print(data['available_instances'])
         else:
             try:
                 parsedQuery = parseQuery(line)
                 lispedQuery = LispifyVisitor().visitEntry(parsedQuery)
-                print(lispedQuery)
+                res = lift(lispedQuery, data)
+                print(res)
             except Exception as error:
                 print(error)
 
