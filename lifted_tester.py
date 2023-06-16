@@ -2,7 +2,7 @@ from main import lift
 from db_utils import DatabaseConnection
 
 # temporary database as a dictionary
-db = DatabaseConnection('main.db', 'TestingData')
+db = DatabaseConnection('main.db')
 
 # test queries
 queries = []

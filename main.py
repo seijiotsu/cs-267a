@@ -193,8 +193,8 @@ class QueryShell(cmd.Cmd):
 - Type '.instances' for avaliable instances.
 - Type '.verbose' to toggle verbosity
 
-- Type '.load X.db Y' to load file X.db and table Y
-- Type '.load_default' to load the default 'main.db' database and 'TestingData' table
+- Type '.load X.db' to load file X.db
+- Type '.load_default' to load the default 'main.db' database
     
 Queries follow a format that mirrors First-Order logic:
 
@@ -241,10 +241,10 @@ For example:
             else:
                 print('Disabled verbose output')
         elif line == '.load_default':
-            self.db = DatabaseConnection('main.db', 'TestingData')
+            self.db = DatabaseConnection('main.db')
         elif '.load' in line:
             line = line.split(' ')
-            self.db = DatabaseConnection(line[1], line[2])
+            self.db = DatabaseConnection(line[1])
         else:
             try:
                 parsedQuery = parseQuery(line)
