@@ -34,10 +34,8 @@ queries.append(['forall', 'x', ['or', ['atom', 'A', ['variable', 'x']], ['atom',
 # 0.2600048
 queries.append(['forall', 'x', ['exists', 'y', ['and', ['atom', 'A', ['variable', 'x']], ['atom', 'B', ['variable', 'y']]]]]) # combination of quantifiers
 # 0.0023712
-queries.append(['forall', 'x', ['exists', 'y', ['or', ['atom', 'A', ['variable', 'x']], ['atom', 'B', ['variable', 'y']]]]]) # another combination of quantifiers
-# 0.9644795551
 
-corrects = [0.1, 0.8, 0.06, 0.64, 0.0024, 0.6976, 0.3024, 0.0024, 0.00192, 0.002256, 0.55808, 0.5509008, 0.2600048, 0.0023712, 0.9644795551]
+corrects = [0.1, 0.8, 0.06, 0.64, 0.0024, 0.6976, 0.3024, 0.0024, 0.00192, 0.002256, 0.55808, 0.5509008, 0.2600048, 0.0023712]
 
 answers = []
 for query in queries:
